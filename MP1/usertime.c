@@ -9,12 +9,13 @@
 #include <linux/list.h>
 #include <linux/vmalloc.h>
 #include<linux/slab.h>
+#include <linux/workqueue.h>
 
 #include "include/usertime.h"
 #include "include/mp1_given.h"
 
 static struct timer_list my_timer;
-static struct workqueue_struct* wq;
+static struct workqueue_struct* wq = NULL;
 
 typedef struct user_process_info {
   struct list_head list;
@@ -60,33 +61,38 @@ void cpu_time_update()
             printk("\nCould not update cputime, removing process");
         }
         else {
-            printk("\n Updating cpu time of process id %d with time %lu",pid_data->pid,pid_data->timestamp);
+            printk(KERN_INFO "\n id %d with time %lu",pid_data->pid,pid_data->timestamp);
             pid_data->timestamp = cputime;
         }
     }
 }
 
-void work_function_cb()
+void work_function_cb(struct work_struct *work)
 {
-    //cpu_time_update();
+    cpu_time_update();
+    kfree( (void *)work );
+    return;
 }
 
 void add_to_work_queue()
 {
     struct work_struct* work = kmalloc(sizeof(struct work_struct), GFP_KERNEL);
-    INIT_WORK(work, work_function_cb);
-    if(!work)
-    {
-        printk(KERN_INFO "could not initialize this work \n");
-	return;
+    if(work) {
+        INIT_WORK(work, work_function_cb);
+        printk(KERN_INFO "INIT work done \n");
+        if(!work)
+        {
+            printk(KERN_INFO "could not initialize this work \n");
+            return;
+        }
+        queue_work(wq, work);
     }
-    queue_work(wq, work);
 }
 
 void update_user_data()
 {
+  unsigned long next_timer = jiffies + msecs_to_jiffies(5000);
   printk( "Updating user process data\n");
-  unsigned long next_timer = jiffies + msecs_to_jiffies(200);
   add_to_work_queue();
   mod_timer( &my_timer, next_timer);
 }
@@ -94,14 +100,19 @@ void update_user_data()
 int init_mytimer(void)
 {
   int ret;
-
-  printk("Timer module installing\n");
-
+  wq = create_workqueue("my_queue");
+  if(!wq) {
+      printk("\n Could not create a work queue");
+  }
+  printk("\nWork Queue created");
+  
   init_timer(&my_timer);
   my_timer.function = update_user_data;
 
-  ret = mod_timer( &my_timer, jiffies + msecs_to_jiffies(200) );
+  ret = mod_timer( &my_timer, jiffies + msecs_to_jiffies(5000));
   if (ret) printk("Error in mod_timer\n");
+
+  printk("Timer installed \n");
 
   return 0;
 
