@@ -10,10 +10,8 @@
 
 static int __init cputime_measurer_initialize(void)
 {
-    printk(KERN_INFO "Initializing CPU time measurer\n");
-
     int status;
-
+    printk(KERN_INFO "Initializing CPU time measurer\n");
 
     status = proc_initialize();
     if (status)

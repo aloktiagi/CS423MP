@@ -31,14 +31,13 @@ void add_process_to_list(pid_t pid)
 {
     process_info *new = (process_info *) kmalloc( sizeof(process_info), GFP_KERNEL );
     new->pid = pid;
-    printk( "\nUpdating list with pid %d",pid);
     new->timestamp = 0;
     mutex_lock(&process_list_lock);
     list_add_tail( &new->list, &process_list);
     mutex_unlock(&process_list_lock);
 }
 
-void clean_up_list()
+void clean_up_list(void)
 {
     process_info *curr, *next;
     list_for_each_entry_safe(curr, next, &process_list, list)
@@ -74,7 +73,7 @@ void delete_process_from_list(process_info *process)
     return;
 }
 
-void cpu_time_update()
+void cpu_time_update(void)
 {
     process_info *curr, *next;
     list_for_each_entry_safe(curr, next, &process_list, list)
@@ -84,6 +83,7 @@ void cpu_time_update()
         result = get_cpu_use(curr->pid,&cputime);
         if(result < 0) {
             printk("\nCould not update cputime, removing process");
+            delete_process_from_list(curr);
         }
         else {
             printk(KERN_INFO "\n id %d with time %lu", curr->pid, curr->timestamp);
@@ -101,7 +101,7 @@ void work_function_cb(struct work_struct *work)
     return;
 }
 
-void add_to_work_queue()
+void add_to_work_queue(void)
 {
     struct work_struct* work = kmalloc(sizeof(struct work_struct), GFP_KERNEL);
     if(work) {
@@ -116,7 +116,7 @@ void add_to_work_queue()
     }
 }
 
-void update_user_data()
+void update_user_data(unsigned long data)
 {
     unsigned long next_timer = jiffies + msecs_to_jiffies(5000);
     printk( "\nUpdating user process data");

@@ -35,23 +35,17 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
 int read_proc_cb(char* buffer, char** buffer_location, off_t offset, int buffer_length, int* eof, void* data)
 {
     int ret;
-    char * proc_buff = NULL;
+    char *proc_buff = NULL;
+    int numofdata;
 
     if (offset > 0) {
         ret  = 0;
     } else {
-        //int num_copied = get_process_times_from_list(&proc_buff);
         get_process_times_from_list(&proc_buff);
-        //int nbytes = copy_to_user(buffer, proc_buff, num_copied);
-        int nbytes = sprintf(buffer, "%s", proc_buff);
-
-        if(nbytes != 0)
-        {
-            printk(KERN_ALERT "procfile_read copy_to_user failed!\n");
-        }
+        numofdata = sprintf(buffer, "%s", proc_buff);
 
         kfree(proc_buff);
-        ret = nbytes;
+        ret = numofdata;
     }
     return ret;
 }
