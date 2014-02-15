@@ -10,6 +10,7 @@
 #include <linux/vmalloc.h>
 #include<linux/slab.h>
 #include <linux/workqueue.h>
+#include <linux/mutex.h>
 
 #include "include/usertime.h"
 #include "include/mp1_given.h"
@@ -24,53 +25,79 @@ typedef struct user_process_info {
 } process_info;
 
 LIST_HEAD(process_list);
+static DEFINE_MUTEX(process_list_lock);
 
 void add_process_to_list(pid_t pid)
 {
     process_info *new = (process_info *) kmalloc( sizeof(process_info), GFP_KERNEL );
     new->pid = pid;
-    printk( "Updating list with pid %d\n",pid);
+    printk( "\nUpdating list with pid %d",pid);
     new->timestamp = 0;
-    list_add( &new->list, &process_list);
+    mutex_lock(&process_list_lock);
+    list_add_tail( &new->list, &process_list);
+    mutex_unlock(&process_list_lock);
+}
+
+void clean_up_list()
+{
+    process_info *curr, *next;
+    list_for_each_entry_safe(curr, next, &process_list, list)
+    {
+        mutex_lock(&process_list_lock);
+        list_del(&curr->list);
+        kfree(curr);
+        mutex_unlock(&process_list_lock);
+    }
 }
 
 unsigned int get_process_times_from_list(char **process_times)
 {
     unsigned int index = 0;
-    process_info *pid_data;
+    process_info *curr, *next;
 
     *process_times = (char *)kmalloc(2048, GFP_KERNEL);
     *process_times[0] = '\0';
 
-    list_for_each_entry(pid_data, &process_list, list)
+    mutex_lock(&process_list_lock);
+    list_for_each_entry_safe(curr, next, &process_list, list)
     {
-        index += sprintf(*process_times, "%s%d: %lu\n", *process_times,pid_data->pid, pid_data->timestamp);
+        index += sprintf(*process_times, "%s%d: %lu\n", *process_times,curr->pid, curr->timestamp);
     }
+    mutex_unlock(&process_list_lock);
     return index;
+}
+
+void delete_process_from_list(process_info *process)
+{
+    list_del(&process->list);
+    kfree(process);
+    return;
 }
 
 void cpu_time_update()
 {
-    process_info *pid_data;
-    list_for_each_entry(pid_data, &process_list, list)
+    process_info *curr, *next;
+    list_for_each_entry_safe(curr, next, &process_list, list)
     {
         int result;
         unsigned long cputime;
-        result = get_cpu_use(pid_data->pid,&cputime);
+        result = get_cpu_use(curr->pid,&cputime);
         if(result < 0) {
             printk("\nCould not update cputime, removing process");
         }
         else {
-            printk(KERN_INFO "\n id %d with time %lu",pid_data->pid,pid_data->timestamp);
-            pid_data->timestamp = cputime;
+            printk(KERN_INFO "\n id %d with time %lu", curr->pid, curr->timestamp);
+            curr->timestamp = cputime;
         }
     }
 }
 
 void work_function_cb(struct work_struct *work)
 {
+    mutex_lock(&process_list_lock);
     cpu_time_update();
     kfree( (void *)work );
+    mutex_unlock(&process_list_lock);
     return;
 }
 
@@ -91,43 +118,44 @@ void add_to_work_queue()
 
 void update_user_data()
 {
-  unsigned long next_timer = jiffies + msecs_to_jiffies(5000);
-  printk( "Updating user process data\n");
-  add_to_work_queue();
-  mod_timer( &my_timer, next_timer);
+    unsigned long next_timer = jiffies + msecs_to_jiffies(5000);
+    printk( "\nUpdating user process data");
+    add_to_work_queue();
+    mod_timer( &my_timer, next_timer);
 }
 
 int init_mytimer(void)
 {
-  int ret;
-  wq = create_workqueue("my_queue");
-  if(!wq) {
-      printk("\n Could not create a work queue");
-  }
-  printk("\nWork Queue created");
+    int ret;
+    wq = create_workqueue("my_queue");
+    if(!wq) {
+        printk("\n Could not create a work queue");
+    }
+    printk("\nWork Queue created");
   
-  init_timer(&my_timer);
-  my_timer.function = update_user_data;
+    init_timer(&my_timer);
+    my_timer.function = update_user_data;
 
-  ret = mod_timer( &my_timer, jiffies + msecs_to_jiffies(5000));
-  if (ret) printk("Error in mod_timer\n");
+    ret = mod_timer( &my_timer, jiffies + msecs_to_jiffies(5000));
+    if (ret) printk("Error in mod_timer\n");
 
-  printk("Timer installed \n");
+    printk("Timer installed \n");
 
-  return 0;
+    return 0;
 
 }
 
 void stop_timer(void)
 {
-  int ret;
+    int ret;
 
-  ret = del_timer( &my_timer );
-  if (ret) printk("The timer is still in use...\n");
-
-  printk("Timer module uninstalling\n");
-
-  return;
-}
+    ret = del_timer( &my_timer );
+    if (ret) printk("The timer is still in use...\n");
+    printk("Timer removed\n");
+    flush_workqueue(wq);
+    destroy_workqueue(wq);
+    clean_up_list();
+    return;
+} 
 
 
