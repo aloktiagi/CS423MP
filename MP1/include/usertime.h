@@ -3,8 +3,6 @@
 
 /**
  * Initialize timer.
- *
- * @return Zero for success.
  */
 extern int init_mytimer(void);
 
@@ -13,8 +11,14 @@ extern int init_mytimer(void);
  */
 extern void stop_timer(void);
 
+/**
+ * Add a new registered process to the list.
+ */
 void add_process_to_list(pid_t pid);
 
+/**
+ * Return all process ids and their cputimes.
+ */
 unsigned int get_process_times_from_list(char **process_times);
 
 #endif /* !CPUM_HEADER */

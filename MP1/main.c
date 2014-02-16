@@ -5,20 +5,22 @@
 #include "include/proc.h"
 #include "include/usertime.h"
 
-#define DRIVER_AUTHOR "Alok Tiagi"
-#define DRIVER_DESC   "A sample driver"
+#define DRIVER_AUTHOR "Alok Tiagi Cedar Pan"
+#define DRIVER_DESC   "CPU Time Measurer"
 
+/* Initialize the kernel module */
 static int __init cputime_measurer_initialize(void)
 {
     int status;
     printk(KERN_INFO "Initializing CPU time measurer\n");
 
+    /* Initialize the proc file system */
     status = proc_initialize();
     if (status)
     {
         return (status);
     }
-
+    /* Start the work queue and the timer */
     status = init_mytimer();
     if (status)
     {
@@ -27,10 +29,14 @@ static int __init cputime_measurer_initialize(void)
     return 0;
 }
 
+/* Exit the module */
 static void __exit cputime_measurer_finalize(void)
 {
-    printk(KERN_INFO "Goodbye, world 4\n");
+    printk(KERN_INFO "Finalizing the module\n");
+    /* remove all proc entries */
     proc_finalize();
+    /* flush the work queue, stop the timer 
+       and clean up the list */
     stop_timer();
 }
 

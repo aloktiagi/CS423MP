@@ -13,12 +13,13 @@
 /** Directory entry. */
 static struct proc_dir_entry *dir = NULL;
 static struct proc_dir_entry *proc_entry = NULL;
-
+/* Buffer to copy data */
 static char procfs_buffer[PROCFS_MAX_SIZE];
-
+/* intialize the size to 0 */
 static unsigned long procfs_buffer_size = 0; 
 
-
+/* Callback function for all write commands
+   to our proc file */
 int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long count, void* data)
 {
     int pid;
@@ -32,6 +33,8 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
 
 }
 
+/* call back function for all reads done on 
+   our proc file */
 int read_proc_cb(char* buffer, char** buffer_location, off_t offset, int buffer_length, int* eof, void* data)
 {
     int ret;
@@ -49,6 +52,9 @@ int read_proc_cb(char* buffer, char** buffer_location, off_t offset, int buffer_
     }
     return ret;
 }
+
+/* initialize the proc directory and create
+   a file under it */
 int proc_initialize(void)
 {
 
@@ -73,6 +79,7 @@ int proc_initialize(void)
     return (0);
 }
 
+/* module exiting, remove the proc file and directory */
 void proc_finalize(void)
 {
     /* Remove the directory */

@@ -15,9 +15,11 @@
 #include "include/usertime.h"
 #include "include/mp1_given.h"
 
+/* Timer structure */
 static struct timer_list my_timer;
+/* Work Queue structure */
 static struct workqueue_struct* wq = NULL;
-
+/* Process info linked list */
 typedef struct user_process_info {
   struct list_head list;
   pid_t pid;
@@ -27,6 +29,8 @@ typedef struct user_process_info {
 LIST_HEAD(process_list);
 static DEFINE_MUTEX(process_list_lock);
 
+/* Adds a newly registered process at 
+   the end of the list */
 void add_process_to_list(pid_t pid)
 {
     process_info *new = (process_info *) kmalloc( sizeof(process_info), GFP_KERNEL );
@@ -37,6 +41,7 @@ void add_process_to_list(pid_t pid)
     mutex_unlock(&process_list_lock);
 }
 
+/* Clean up the list when the module exits */
 void clean_up_list(void)
 {
     process_info *curr, *next;
@@ -49,6 +54,9 @@ void clean_up_list(void)
     }
 }
 
+/* Get all registered processes and return 
+   them back to the user with pid and current
+   cpu time */
 unsigned int get_process_times_from_list(char **process_times)
 {
     unsigned int index = 0;
@@ -66,6 +74,7 @@ unsigned int get_process_times_from_list(char **process_times)
     return index;
 }
 
+/* Delete a process from list */
 void delete_process_from_list(process_info *process)
 {
     list_del(&process->list);
@@ -73,6 +82,8 @@ void delete_process_from_list(process_info *process)
     return;
 }
 
+/* Update the current cpu time of a registered
+   process when the work is scheduled */
 void cpu_time_update(void)
 {
     process_info *curr, *next;
@@ -92,6 +103,8 @@ void cpu_time_update(void)
     }
 }
 
+/* Call back function when the work is 
+   scheduled */
 void work_function_cb(struct work_struct *work)
 {
     mutex_lock(&process_list_lock);
@@ -101,6 +114,7 @@ void work_function_cb(struct work_struct *work)
     return;
 }
 
+/* Add work of cpu time update to the work queue */
 void add_to_work_queue(void)
 {
     struct work_struct* work = kmalloc(sizeof(struct work_struct), GFP_KERNEL);
@@ -116,6 +130,7 @@ void add_to_work_queue(void)
     }
 }
 
+/* Timer call back called when the timer value expires */
 void update_user_data(unsigned long data)
 {
     unsigned long next_timer = jiffies + msecs_to_jiffies(5000);
@@ -124,6 +139,7 @@ void update_user_data(unsigned long data)
     mod_timer( &my_timer, next_timer);
 }
 
+/* Initialize the work queue and start the timer */
 int init_mytimer(void)
 {
     int ret;
@@ -144,7 +160,8 @@ int init_mytimer(void)
     return 0;
 
 }
-
+/* Clean up module. Delete the timer, clean up the 
+   work queue and remove all entries from the list */
 void stop_timer(void)
 {
     int ret;

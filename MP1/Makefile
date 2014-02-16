@@ -10,3 +10,8 @@ all:
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+
+all: test
+
+test:
+	gcc -o test testcode.c

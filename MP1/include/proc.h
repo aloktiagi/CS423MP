@@ -3,8 +3,6 @@
 
 /**
  * Initialize proc.
- *
- * @return Zero for success.
  */
 extern int proc_initialize(void);
 
