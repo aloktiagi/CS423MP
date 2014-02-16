@@ -117,7 +117,7 @@ void work_function_cb(struct work_struct *work)
 /* Add work of cpu time update to the work queue */
 void add_to_work_queue(void)
 {
-    struct work_struct* work = kmalloc(sizeof(struct work_struct), GFP_KERNEL);
+    struct work_struct* work = kmalloc(sizeof(struct work_struct), GFP_ATOMIC);
     if(work) {
         INIT_WORK(work, work_function_cb);
         printk(KERN_INFO "INIT work done \n");
@@ -164,10 +164,10 @@ int init_mytimer(void)
    work queue and remove all entries from the list */
 void stop_timer(void)
 {
-    int ret;
+//    int ret;
 
-    ret = del_timer( &my_timer );
-    if (ret) printk("The timer is still in use...\n");
+    while(del_timer_sync( &my_timer ));
+//    if (ret) printk("The timer is still in use...\n");
     printk("Timer removed\n");
     flush_workqueue(wq);
     destroy_workqueue(wq);
