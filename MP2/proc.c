@@ -22,15 +22,44 @@ static unsigned long procfs_buffer_size = 0;
    to our proc file */
 int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long count, void* data)
 {
-    int pid;
+    char *input;
+    unsigned int pid, period, computation;
+    char op;
+
+    input = kmalloc(count, GFP_KERNEL);
+
     procfs_buffer_size =  count;
-    if(copy_from_user(procfs_buffer, buffer, procfs_buffer_size)) {
+    if(copy_from_user(input, buffer, count)) {
         return -EFAULT;
     }
-    pid = simple_strtol(procfs_buffer, NULL, 10);
-    add_process_to_list(pid);
-    return procfs_buffer_size;
 
+    op = input[0];
+    switch(op)
+    {
+        case 'R':
+            sscanf(input+2, "%u,%u,%u", &pid, &period, &computation);
+            register_task(pid, period, computation);
+            printk("\n Register pid %u Period %u computation %u",pid,period, computation);
+            break;
+        case 'D':
+            sscanf(input+2, "%u", &pid);
+            printk("\n De-Register pid %u",pid);
+//            mp2_deregister_task(pid);
+            break;
+        case 'Y':
+            sscanf(input+2, "%u", &pid);
+            printk("\n Yield pid %u",pid);
+//            mp2_yield_task(pid);
+            break;
+
+            /* fallthrough for errors */
+        default:
+            printk(KERN_INFO "mp2: Error regstering specified process");
+
+    }
+
+    kfree(input);
+    return(count);
 }
 
 /* call back function for all reads done on 

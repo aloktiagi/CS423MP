@@ -21,11 +21,11 @@ static int __init cputime_measurer_initialize(void)
         return (status);
     }
     /* Start the work queue and the timer */
-    status = init_mytimer();
-    if (status)
-    {
-        return (status);
-    }
+    //status = init_mytimer();
+    //if (status)
+    //{
+    //    return (status);
+    //}
     return 0;
 }
 
@@ -37,7 +37,7 @@ static void __exit cputime_measurer_finalize(void)
     proc_finalize();
     /* flush the work queue, stop the timer 
        and clean up the list */
-    stop_timer();
+    //stop_timer();
 }
 
 module_init(cputime_measurer_initialize);

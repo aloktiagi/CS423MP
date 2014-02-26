@@ -4,22 +4,20 @@
 /**
  * Initialize timer.
  */
-extern int init_mytimer(void);
+extern int kthread_init(void);
 
 /**
  * Stop timer.
  */
-extern void stop_timer(void);
+extern void kthread_stop(void);
 
 /**
- * Add a new registered process to the list.
- */
-void add_process_to_list(pid_t pid);
+  * Register a new process 
+  */
+extern void register_task(unsigned int pid,
+                          unsigned int period,
+                          unsigned int computation);
 
-/**
- * Return all process ids and their cputimes.
- */
-unsigned int get_process_times_from_list(char **process_times);
 
 #endif 
 
