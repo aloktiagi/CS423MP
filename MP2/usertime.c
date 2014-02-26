@@ -13,7 +13,7 @@
 #include <linux/mutex.h>
 
 #include "include/usertime.h"
-#include "include/mp1_given.h"
+#include "include/mp2_given.h"
 
 /* Timer structure */
 static struct timer_list my_timer;
@@ -45,6 +45,24 @@ my_task_t *running_task;
 LIST_HEAD(process_list);
 static DEFINE_MUTEX(process_list_lock);
 
+void timer_cb(my_task_t *task)
+{
+    printk("\n Timer expired for process pid %u",task->pid);
+    initialize_timer(task);
+    if(running_task != task)
+    {
+        task->state = READY;
+        //Call context switch
+    }
+}
+
+void initialize_timer(my_task_t *task)
+{
+    printk("\n Setting up the timer for pid %u",task->pid);
+    setup_timer(&task->wakeup_timer,timer_cb,task);
+    mod_timer(&task->wakeup_timer,jiffies + msecs_to_jiffies(task->period));
+}
+
 void register_task(unsigned int pid, unsigned int period, unsigned int computation)
 {
     my_task_t *new_task;
@@ -60,8 +78,11 @@ void register_task(unsigned int pid, unsigned int period, unsigned int computati
     new_task->state = SLEEPING;
 
     mutex_lock(&process_list_lock);
-    
+    INIT_LIST_HEAD(&new_task->task_node);
+    list_add_tail(&new_task->task_node, &process_list);
     mutex_unlock(&process_list_lock);
+
+    initialize_timer(new_task);
 }
 
 /* Initialize the work queue and start the timer */

@@ -73,7 +73,7 @@ int read_proc_cb(char* buffer, char** buffer_location, off_t offset, int buffer_
     if (offset > 0) {
         ret  = 0;
     } else {
-        get_process_times_from_list(&proc_buff);
+        //get_process_times_from_list(&proc_buff);
         numofdata = sprintf(buffer, "%s", proc_buff);
 
         kfree(proc_buff);
