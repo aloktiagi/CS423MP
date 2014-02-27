@@ -38,21 +38,23 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
     {
         case 'R':
             sscanf(input+2, "%u,%u,%u", &pid, &period, &computation);
+            if(!can_add_task(period, computation)) {
+                printk("\n Cannot register task with pid %u Period %u computation %u", pid, period, computation);
+                break;
+            }
             register_task(pid, period, computation);
-            printk("\n Register pid %u Period %u computation %u",pid,period, computation);
+            printk(KERN_INFO "Register pid %u Period %u computation %u\n", pid, period, computation);
             break;
         case 'D':
             sscanf(input+2, "%u", &pid);
             printk("\n De-Register pid %u",pid);
-//            mp2_deregister_task(pid);
+//            deregister_task(pid);
             break;
         case 'Y':
             sscanf(input+2, "%u", &pid);
             printk("\n Yield pid %u",pid);
             yield_task(pid);
             break;
-
-            /* fallthrough for errors */
         default:
             printk(KERN_INFO "mp2: Error regstering specified process");
 

@@ -1,0 +1,1 @@
+cmd_/home/aloktiagi/OS/MP2/cpum.ko := ld -r -m elf_i386 -T /usr/src/linux-headers-3.8.0-33-generic/scripts/module-common.lds --build-id  -o /home/aloktiagi/OS/MP2/cpum.ko /home/aloktiagi/OS/MP2/cpum.o /home/aloktiagi/OS/MP2/cpum.mod.o

@@ -100,7 +100,7 @@ struct my_task *get_next_task(void)
 
 void timer_cb(my_task_t *task)
 {
-    printk(KERN_DEBUG "Timer expired for \n");
+    printk(KERN_INFO "Timer expired for \n");
     initialize_timer(task);
     if(running_task != task) {
         task->state = READY;
@@ -114,6 +114,23 @@ void initialize_timer(my_task_t *task)
     mod_timer(&task->wakeup_timer,jiffies + msecs_to_jiffies(task->period));
 }
 
+bool can_add_task(unsigned int period, unsigned int computation)
+{
+    my_task_t *curr, *next;
+    unsigned long utilization = (computation * 1000)/period;
+    
+    mutex_lock(&process_list_lock);
+    list_for_each_entry_safe(curr, next, &process_list, task_node)
+    {
+        utilization += ((curr->computation)*1000)/curr->period;
+    }
+    mutex_unlock(&process_list_lock);
+    
+    if(utilization > 693)
+	return false;
+    return true;
+}
+
 void yield_task(unsigned int pid)
 {
     unsigned int release_time;
@@ -125,18 +142,21 @@ void yield_task(unsigned int pid)
         task = find_my_task_by_pid(pid);
     }
     if(jiffies < task->next_period) {
-        release_time = jiffies + task->next_period;
+        release_time = task->next_period - jiffies;
         task->state = SLEEPING;
         mod_timer(&task->wakeup_timer,jiffies + release_time);
+        printk(KERN_INFO "Putting task to sleep %u\n", pid);
         running_task = NULL;
         //wakeupthread
     }
     else {
+        printk(KERN_INFO "Putting task to READY %u\n", pid);
         if(task->state == SLEEPING)
             task->state = READY;
         //wakeupthread
         running_task = NULL;
     }
+    printk(KERN_INFO "Yield for task with pid %u\n", pid);
     //set_task_state(task->linux_task, TASK_UNINTERRUPTIBLE);
 }
 
@@ -153,6 +173,7 @@ void register_task(unsigned int pid, unsigned int period, unsigned int computati
     new_task->period = period;
     new_task->computation = computation;
     new_task->state = SLEEPING;
+    new_task->next_period = jiffies + msecs_to_jiffies(new_task->period);
 
     mutex_lock(&process_list_lock);
     //INIT_LIST_HEAD(&new_task->task_node);
@@ -161,9 +182,9 @@ void register_task(unsigned int pid, unsigned int period, unsigned int computati
 
 //    initialize_timer(new_task);
     setup_timer(&new_task->wakeup_timer,timer_cb,new_task);
+    printk(KERN_INFO "Registered new task with pid %u\n", pid);
 }
 
-/* Initialize the work queue and start the timer */
 int kthread_init(void)
 {
     /* Start the context switch thread */
@@ -177,8 +198,6 @@ int kthread_init(void)
 
 }
 
-/* Clean up module. Delete the timer, clean up the 
-   work queue and remove all entries from the list */
 void kthread_stop(void)
 {
     clean_up_list();
