@@ -63,7 +63,7 @@ unsigned int get_tasks_from_list(char **tasks)
 
     *tasks = (char *)kmalloc(2048, GFP_KERNEL);
     *tasks[0] = '\0';
-    index += sprintf(*tasks+index, "PID:Period:Computation:State\n");
+    index += sprintf(*tasks+index, "PID : Period : Computation : State\n");
     mutex_lock(&process_list_lock);
     list_for_each_entry_safe(curr, next, &process_list, task_node)
     {
@@ -82,6 +82,17 @@ struct my_task *find_my_task_by_pid(unsigned int pid)
     {
         if(curr->pid == pid)
 	    break;
+    }
+    mutex_unlock(&process_list_lock);
+    return curr;
+}
+
+struct my_task *get_next_task(void)
+{
+    my_task_t *curr, *next;
+    mutex_lock(&process_list_lock);
+    list_for_each_entry_safe(curr, next, &process_list, task_node)
+    {
     }
     mutex_unlock(&process_list_lock);
     return curr;
