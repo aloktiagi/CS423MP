@@ -9,7 +9,7 @@ extern int kthread_init(void);
 /**
  * Stop timer.
  */
-extern void kthread_stop(void);
+extern void stop_kthread(void);
 
 /**
   * Register a new process 

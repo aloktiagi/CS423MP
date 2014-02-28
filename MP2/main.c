@@ -37,7 +37,7 @@ static void __exit cputime_measurer_finalize(void)
     proc_finalize();
     /* flush the work queue, stop the timer 
        and clean up the list */
-    kthread_stop();
+    stop_kthread();
 }
 
 module_init(cputime_measurer_initialize);
