@@ -149,7 +149,7 @@ int kthread_init(void)
     if(!task_cache)
 	return -ENOMEM;
     printk(KERN_DEBUG "Context switch thread\n");
-    //kthread_run(dispatching_thread_function,NULL,"MP2_dispatching_thread");
+    kthread_run(dispatching_thread_function,NULL,"MP2_dispatching_thread");
 	
 
     return 0;
@@ -175,7 +175,7 @@ void kthread_stop(void)
 
 
 //thread function for dispatching thread
-/*
+
 int dispatching_thread_function(void *nothing)
 {
 	my_task_t *new_task;
@@ -242,4 +242,4 @@ int dispatching_thread_function(void *nothing)
 	
 	return 0;
 
-}*/
+}
