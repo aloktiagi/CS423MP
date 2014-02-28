@@ -83,8 +83,8 @@ int main(int argc, char **argv)
         printf("\n Job done");
     }
 
-    //sprintf(cmd, "echo 'D, %lu'>" PROC_FILENAME, mypid);
-    //system(cmd);
+    sprintf(cmd, "echo 'D, %d'>" PROC_FILENAME, mypid);
+    system(cmd);
 
     return 0;
 }

@@ -145,6 +145,28 @@ bool can_add_task(unsigned int period, unsigned int computation)
     return true;
 }
 
+void deregister_task(unsigned long pid)
+{
+    my_task_t *task;
+    struct sched_param sparam;
+    task = find_my_task_by_pid(pid);
+    del_timer_sync(&task->wakeup_timer);
+
+    mutex_lock(&process_list_lock);
+    list_del(&task->task_node);
+    kmem_cache_free(task_cache, task);
+    mutex_unlock(&process_list_lock);
+
+    //mutex_lock(&curr_mutex);
+    if(task == running_task)
+        running_task = NULL;
+    //mutex_unlock(&curr_mutex);
+    //sparam.sched_priority = 0;
+    //sched_setscheduler(task->linux_task, SCHED_NORMAL, &sparam);
+    wake_up_process(dispatch_kthread);
+    return 0;
+}
+
 void yield_task(unsigned int pid)
 {
     unsigned int release_time;

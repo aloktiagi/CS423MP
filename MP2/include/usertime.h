@@ -24,6 +24,8 @@ extern unsigned int get_tasks_from_list(char **tasks);
 
 extern void yield_task(unsigned int pid);
 
+void deregister_task(unsigned long pid);
+
 extern bool can_add_task(unsigned int period, unsigned int computation);
 
 #endif 
