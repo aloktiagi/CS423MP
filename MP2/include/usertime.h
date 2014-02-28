@@ -20,6 +20,11 @@ extern void register_task(unsigned int pid,
 
 extern int dispatching_thread_function(void * nothing); 
 
+extern unsigned int get_tasks_from_list(char **tasks);
+
+extern void yield_task(unsigned int pid);
+
+extern bool can_add_task(unsigned int period, unsigned int computation);
 
 #endif 
 
