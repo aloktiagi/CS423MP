@@ -11,6 +11,9 @@
 #include<linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
+
 
 #include "include/usertime.h"
 #include "include/mp2_given.h"
@@ -146,12 +149,15 @@ int kthread_init(void)
     if(!task_cache)
 	return -ENOMEM;
     printk(KERN_DEBUG "Context switch thread\n");
+    //kthread_run(dispatching_thread_function,NULL,"MP2_dispatching_thread");
+	
 
     return 0;
 
 }
 /* Clean up module. Delete the timer, clean up the 
    work queue and remove all entries from the list */
+/*
 void kthread_stop(void)
 {
     clean_up_list();
@@ -159,4 +165,81 @@ void kthread_stop(void)
     return;
 } 
 
+*/
 
+/**
+ *create and run thread
+ * 	k_thread_run(dispatching_thread_function,NULL,"MP2_dispatching thread");
+ *
+ */
+
+
+//thread function for dispatching thread
+/*
+int dispatching_thread_function(void *nothing)
+{
+	my_task_t *new_task;
+
+	while(1)
+	{
+		//check if need to stop the thread
+
+		if(kthread_should_stop())
+			kthread_stop();
+
+		//unlock the linked list
+		mutex_unlock(&process_list_lock);
+		//get the new task: the one in ready state with the highest priority
+
+		if(!list_empty(&process_list)) //check that the list is not empty
+		{
+			my_task_t * curr;
+			my_task_t * next;
+			
+
+			//iterate the task list to find 
+			list_for_each_entry_safe(curr,next, &process_list, task_node)
+			{
+				if( curr->state==READY  && (curr->period < new_task->period))
+					new_task=curr;  
+			}	  
+
+			//lock the linked list
+			mutex_lock(&process_list_lock);
+
+			//compare with current task
+
+			if(running_task!=NULL) //check if the running task is empty
+			{
+
+				if(new_task->period < running_task->period)
+				{
+					//set the task to be -interruptible
+				   set_task_state(running_task->linux_task,TASK_INTERRUPTIBLE);
+					//give up the control to scheduler
+				   struct sched_param sparam_old;
+				   sparam_old.sched_priority=0;
+				   sched_setscheduler(running_task->pid,SCHED_NORMAL, &sparam_old);
+				}
+
+				struct sched_param sparam_new;
+				wake_up_process(new_task->linux_task);
+				sparam_new.sched_priority=MAX_USER_RT_PRIO-1;
+				sched_setscheduler(new_task->pid,SCHED_FIFO,&sparam_new);	
+				running_task=new_task;
+				running_task->state=RUNNING;
+
+			}
+			else
+			{
+				printk(KERN_INFO "Current running task has highest priority");
+				continue;
+			}
+
+		
+		}
+	}
+	
+	return 0;
+
+}*/

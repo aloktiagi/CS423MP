@@ -18,6 +18,8 @@ extern void register_task(unsigned int pid,
                           unsigned int period,
                           unsigned int computation);
 
+extern int dispatching_thread_function(void * nothing); 
+
 
 #endif 
 
