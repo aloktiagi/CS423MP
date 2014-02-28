@@ -12,6 +12,18 @@ long int factorial(int no)
     if(no < 1) return 1;
     return no*factorial(no-1);
 }
+
+double time_diff(struct timeval *prev,
+		 struct timeval *curr)
+{
+	double diff;
+
+        diff = (curr->tv_sec*1000.0 + curr->tv_usec/1000.0) -
+                (prev->tv_sec*1000.0 + prev->tv_usec/1000.0);
+
+        return diff;
+}
+
 int main(int argc, char **argv)
 {
     char cmd[120];
@@ -20,10 +32,16 @@ int main(int argc, char **argv)
     char line[120];
     FILE *file;
     unsigned long int pid, period, computation;
-    struct timeval last_tv, current_tv;
+    struct timeval t0;
+
+    unsigned long int myperiod;
+    int jobs;
+
+    myperiod = atoi(argv[1]);
+    jobs = atoi(argv[2]);
 
     mypid = getpid();
-    sprintf(cmd, "echo 'R,%lu,500,10'>" PROC_FILENAME, mypid);
+    sprintf(cmd, "echo 'R,%d,%lu,10'>" PROC_FILENAME, mypid,myperiod);
     system(cmd);
 
     file = fopen(PROC_FILENAME, "r");
@@ -34,6 +52,7 @@ int main(int argc, char **argv)
             break;
     }
     fclose(file);
+    printf("\n Aieeeeeee process is there");
 
     if(pid != mypid)
     {
@@ -41,26 +60,31 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    sprintf(cmd, "echo 'Y,%lu'>" PROC_FILENAME, mypid);
-    gettimeofday(&last_tv, NULL);
+    sprintf(cmd, "echo 'Y,%d'>" PROC_FILENAME, mypid);
+    gettimeofday(&t0, NULL);
     system(cmd);
 
-    for(k = 0; k < 2; k++)
-        for(j = 0; j < 10; j++)
-        {
-            gettimeofday(&current_tv, NULL);
-            printf("% 4ld sec % 5ld us | fact(%u): %llu\n",
-                    current_tv.tv_sec - last_tv.tv_sec,
-                    current_tv.tv_usec - last_tv.tv_usec,
-                    j, factorial(j));
-            last_tv = current_tv;
+    printf("\n Aieeeeeee yield called");
+    while(jobs > 0)
+    {
+        struct timeval start_time, end_time;
+        int n = 10000;
+        gettimeofday(&start_time);
+         
+        printf("Wakeup time is  %lf msecs\n",time_diff(&t0,&start_time));
 
-            sprintf(cmd, "echo 'Y, %lu'>" PROC_FILENAME, mypid);
-            system(cmd);
-        }
+        factorial(n);
+        gettimeofday(&end_time);
+        printf("Computation time is  %lf msecs\n",time_diff(&start_time,&end_time));
 
-    sprintf(cmd, "echo 'D, %lu'>" PROC_FILENAME, mypid);
-    system(cmd);
+        sprintf(cmd, "echo 'Y, %d'>" PROC_FILENAME, mypid);
+        system(cmd);
+        jobs--;
+        printf("\n Job done");
+    }
+
+    //sprintf(cmd, "echo 'D, %lu'>" PROC_FILENAME, mypid);
+    //system(cmd);
 
     return 0;
 }
