@@ -47,12 +47,12 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
             break;
         case 'D':
             sscanf(input+2, "%u", &pid);
-            printk("\n De-Register pid %u",pid);
+            //printk("\n De-Register pid %u",pid);
             deregister_task(pid);
             break;
         case 'Y':
             sscanf(input+2, "%u", &pid);
-            printk("\n Yield pid %u",pid);
+            //printk("\n Yield pid %u",pid);
             yield_task(pid);
             break;
         default:

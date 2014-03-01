@@ -7,7 +7,7 @@
 
 #define PROC_FILENAME "/proc/mp1/status"
 
-long int factorial(int no)
+long int factorial(long int no)
 {
     if(no < 1) return 1;
     return no*factorial(no-1);
@@ -41,7 +41,8 @@ int main(int argc, char **argv)
     jobs = atoi(argv[2]);
 
     mypid = getpid();
-    sprintf(cmd, "echo 'R,%d,%lu,10'>" PROC_FILENAME, mypid,myperiod);
+    printf("\nMy pid %d",mypid);
+    sprintf(cmd, "echo 'R,%d,%lu,100'>" PROC_FILENAME, mypid,myperiod);
     system(cmd);
 
     file = fopen(PROC_FILENAME, "r");
@@ -68,14 +69,18 @@ int main(int argc, char **argv)
     while(jobs > 0)
     {
         struct timeval start_time, end_time;
-        int n = 10000;
+        long int result;
+        int i;
+        long int n = 7000;
         gettimeofday(&start_time);
          
         printf("Wakeup time is  %lf msecs\n",time_diff(&t0,&start_time));
 
-        factorial(n);
+        for(i=0;i<n;i++) {
+            result = factorial(i);
+        }
         gettimeofday(&end_time);
-        printf("Computation time is  %lf msecs\n",time_diff(&start_time,&end_time));
+        printf("Computation time is  %lf msecs\n",time_diff(&t0,&end_time));
 
         sprintf(cmd, "echo 'Y, %d'>" PROC_FILENAME, mypid);
         system(cmd);

@@ -13,7 +13,7 @@
 #include <linux/mutex.h>
 #include <linux/kthread.h>
 #include <linux/sched.h>
-
+#include <linux/spinlock.h>
 
 #include "include/usertime.h"
 #include "include/mp2_given.h"
@@ -47,6 +47,8 @@ int stop_dispatch_kthread = 0;
 
 LIST_HEAD(process_list);
 static DEFINE_MUTEX(process_list_lock);
+spinlock_t mytask_lock;
+unsigned long flags;
 
 void initialize_timer(my_task_t *task);
 
@@ -96,35 +98,36 @@ struct my_task *find_my_task_by_pid(unsigned int pid)
 
 struct my_task *get_next_task(void)
 {
-    my_task_t *curr, *next, *next_task;
+    struct list_head *pos;
+    my_task_t *curr, *next, *next_task = NULL;
     mutex_lock(&process_list_lock);
     list_for_each_entry_safe(curr, next, &process_list, task_node)
     {
-        //if((curr->state == READY || curr->state == RUNNING) && 
-        //   (next_task == NULL || curr->period < next_task->period)) {
+        if((curr->state == READY || curr->state == RUNNING) && 
+           (next_task == NULL || curr->period < next_task->period)) {
             next_task = curr;
-        //    printk(KERN_INFO "CUrr pointing to pid %u\n",next_task->pid);
-        //    }
+            printk(KERN_INFO "-------CUrr pointing to pid %u\n",curr->pid);
+        }
     }
     mutex_unlock(&process_list_lock);
-    printk(KERN_INFO "Returning task for pid %u\n",next_task->pid);
+    //printk(KERN_INFO "Returning task for pid %u\n",next_task->pid);
     return next_task;
+
 }
 
 void timer_cb(my_task_t *task)
 {
-    printk(KERN_INFO "Timer expired for pid %u\n",task->pid);
-    initialize_timer(task);
-//  if(running_task != task) {
-        task->state = READY;
-        //wakeupthread
-        wake_up_process(dispatch_kthread);
-    //}
+    //printk(KERN_INFO "Timer expired for pid %u\n",task->pid);
+    //initialize_timer(task);
+    spin_lock_irqsave(&mytask_lock, flags);
+    task->state = READY;
+    spin_unlock_irqrestore(&mytask_lock, flags);
+    wake_up_process(dispatch_kthread);
 }
 
 void initialize_timer(my_task_t *task)
 {
-    printk("\n Setting up the timer for pid %u",task->pid);
+    //printk("\n Setting up the timer for pid %u",task->pid);
     mod_timer(&task->wakeup_timer,jiffies + msecs_to_jiffies(task->period));
 }
 
@@ -154,17 +157,16 @@ void deregister_task(unsigned long pid)
 
     mutex_lock(&process_list_lock);
     list_del(&task->task_node);
-    kmem_cache_free(task_cache, task);
     mutex_unlock(&process_list_lock);
 
-    //mutex_lock(&curr_mutex);
+    spin_lock_irqsave(&mytask_lock, flags);
     if(task == running_task)
         running_task = NULL;
-    //mutex_unlock(&curr_mutex);
-    //sparam.sched_priority = 0;
-    //sched_setscheduler(task->linux_task, SCHED_NORMAL, &sparam);
+    spin_unlock_irqrestore(&mytask_lock, flags);
+    sparam.sched_priority = 0;
+    sched_setscheduler(task->linux_task, SCHED_NORMAL, &sparam);
+    kmem_cache_free(task_cache, task);
     wake_up_process(dispatch_kthread);
-    return 0;
 }
 
 void yield_task(unsigned int pid)
@@ -180,21 +182,27 @@ void yield_task(unsigned int pid)
     }
     if(jiffies < task->next_period) {
         release_time = task->next_period - jiffies;
+
+        spin_lock_irqsave(&mytask_lock, flags);
         task->state = SLEEPING;
+        spin_unlock_irqrestore(&mytask_lock, flags);
+
         mod_timer(&task->wakeup_timer,jiffies + release_time);
-        printk(KERN_INFO "Putting task to sleep %u\n", pid);
+        //printk(KERN_INFO "Putting task to sleep %u\n", pid);
         if(running_task && (running_task->pid == task->pid))
             running_task = NULL;
         //wakeupthread
     }
     else {
-        printk(KERN_INFO "Putting task to READY %u\n", pid);
+        //printk(KERN_INFO "Putting task to READY %u\n", pid);
+        spin_lock_irqsave(&mytask_lock, flags);
         if(task->state == SLEEPING)
             task->state = READY;
+        spin_unlock_irqrestore(&mytask_lock, flags);
         //wakeupthread
         running_task = NULL;
     }
-    printk(KERN_INFO "Yield for task with pid %u\n", pid);
+    //printk(KERN_INFO "Yield for task with pid %u\n", pid);
     set_task_state(task->linux_task, TASK_UNINTERRUPTIBLE);
     sparam.sched_priority = 0;
     sched_setscheduler(task->linux_task, SCHED_NORMAL, &sparam);
@@ -218,11 +226,9 @@ void register_task(unsigned int pid, unsigned int period, unsigned int computati
     new_task->next_period = jiffies + msecs_to_jiffies(new_task->period);
 
     mutex_lock(&process_list_lock);
-    //INIT_LIST_HEAD(&new_task->task_node);
     list_add_tail(&new_task->task_node, &process_list);
     mutex_unlock(&process_list_lock);
 
-//    initialize_timer(new_task);
     setup_timer(&new_task->wakeup_timer,timer_cb,new_task);
     printk(KERN_INFO "Registered new task with pid %u\n", pid);
 }
@@ -233,31 +239,27 @@ int dispatching_kthread_function(void *nothing)
 {
     my_task_t *new_task = NULL;
 
-    new_task = get_next_task();    
     printk(KERN_INFO "AIEEEEE dispatching_kthread_function called\n");
     while(1) {
+        new_task = get_next_task();    
 	if(stop_dispatch_kthread == 1)
 	    break;
 
-        if(new_task == NULL) {
-            printk(KERN_INFO "AIEEEEE new task is null\n");
-        }
-        if(running_task == NULL)
-            printk(KERN_INFO "AIEEEEE running task is null");
-
+        spin_lock_irqsave(&mytask_lock, flags);
+        if(!list_empty(&process_list)) {
 	if(running_task != NULL) //check if the running task is empty
 	{
             printk(KERN_INFO "Running task not null\n");
    	    if(new_task && (new_task->period < running_task->period))
 	    {
-                printk(KERN_INFO "new task prio lower than running task\n");
 		struct sched_param sparam_old;
 	        //set the task to be -interruptible
-	        set_task_state(running_task->linux_task,TASK_INTERRUPTIBLE);
+	        //set_task_state(running_task->linux_task,TASK_INTERRUPTIBLE);
 		//give up the control to scheduler
 		sparam_old.sched_priority = 0;
-		sched_setscheduler(running_task->linux_task, SCHED_NORMAL, &sparam_old);
                 running_task->state = READY;
+                printk(KERN_INFO "new task prio lower than running task %d\n",running_task->pid);
+		sched_setscheduler(running_task->linux_task, SCHED_NORMAL, &sparam_old);
                 running_task = NULL;
 	    }
             else
@@ -274,8 +276,11 @@ int dispatching_kthread_function(void *nothing)
             sched_setscheduler(new_task->linux_task, SCHED_FIFO, &sparam_new);
             running_task=new_task;
             running_task->state=RUNNING;
+            running_task->next_period += msecs_to_jiffies(running_task->period);
+        }
         }
 
+        spin_unlock_irqrestore(&mytask_lock, flags);
         set_current_state(TASK_INTERRUPTIBLE);
         schedule();
         set_current_state(TASK_RUNNING);
@@ -299,9 +304,6 @@ int kthread_init(void)
     dispatch_kthread = kthread_create(dispatching_kthread_function,
                                    NULL,
                                    "dispatching_kthread");
-
-    sparam.sched_priority = MAX_RT_PRIO;
-    sched_setscheduler(dispatch_kthread, SCHED_FIFO, &sparam);
 
     return 0;
 
