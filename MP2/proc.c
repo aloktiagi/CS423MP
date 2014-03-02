@@ -7,7 +7,7 @@
 #include "include/usertime.h"
 
 /** Base directory for proc files */
-#define MODULE_DIR "mp1"
+#define MODULE_DIR "mp2"
 #define PROCFS_MAX_SIZE PAGE_SIZE
 
 /** Directory entry. */
@@ -32,12 +32,13 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
     if(copy_from_user(input, buffer, count)) {
         return -EFAULT;
     }
-
+    /* Find out the operation to be performed */
     op = input[0];
     switch(op)
     {
         case 'R':
             sscanf(input+2, "%u,%u,%u", &pid, &period, &computation);
+            /* register a new task with pid, period and its computation */
             if(!can_add_task(period, computation)) {
                 printk("\n Cannot register task with pid %u Period %u computation %u", pid, period, computation);
                 break;
@@ -47,16 +48,16 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
             break;
         case 'D':
             sscanf(input+2, "%u", &pid);
-            //printk("\n De-Register pid %u",pid);
+            /* Deregister a task */
             deregister_task(pid);
             break;
         case 'Y':
             sscanf(input+2, "%u", &pid);
-            //printk("\n Yield pid %u",pid);
+            /* Yield task */
             yield_task(pid);
             break;
         default:
-            printk(KERN_INFO "mp2: Error regstering specified process");
+            printk(KERN_INFO "Error regstering process");
 
     }
 

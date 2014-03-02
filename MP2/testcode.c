@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-#define PROC_FILENAME "/proc/mp1/status"
+#define PROC_FILENAME "/proc/mp2/status"
 
 long int factorial(long int no)
 {
@@ -42,6 +42,7 @@ int main(int argc, char **argv)
 
     mypid = getpid();
     printf("\nMy pid %d",mypid);
+    printf("\n Registering");
     sprintf(cmd, "echo 'R,%d,%lu,100'>" PROC_FILENAME, mypid,myperiod);
     system(cmd);
 
@@ -53,7 +54,6 @@ int main(int argc, char **argv)
             break;
     }
     fclose(file);
-    printf("\n Aieeeeeee process is there");
 
     if(pid != mypid)
     {
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     gettimeofday(&t0, NULL);
     system(cmd);
 
-    printf("\n Aieeeeeee yield called");
+    printf("\n Yield--");
     while(jobs > 0)
     {
         struct timeval start_time, end_time;
@@ -74,13 +74,13 @@ int main(int argc, char **argv)
         long int n = 7000;
         gettimeofday(&start_time);
          
-        printf("Wakeup time is  %lf msecs\n",time_diff(&t0,&start_time));
+        printf("\nWakeup time is  %lf msecs",time_diff(&t0,&start_time));
 
         for(i=0;i<n;i++) {
             result = factorial(i);
         }
         gettimeofday(&end_time);
-        printf("Computation time is  %lf msecs\n",time_diff(&t0,&end_time));
+        printf("\nComputation time is  %lf msecs",time_diff(&t0,&end_time));
 
         sprintf(cmd, "echo 'Y, %d'>" PROC_FILENAME, mypid);
         system(cmd);
@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 
     sprintf(cmd, "echo 'D, %d'>" PROC_FILENAME, mypid);
     system(cmd);
+    printf("\n De-registering");
 
     return 0;
 }

@@ -6,10 +6,10 @@
 #include "include/usertime.h"
 
 #define DRIVER_AUTHOR "Alok Tiagi Cedar Pan"
-#define DRIVER_DESC   "CPU Time Measurer"
+#define DRIVER_DESC   "Rate Monotonic Scheduler"
 
 /* Initialize the kernel module */
-static int __init cputime_measurer_initialize(void)
+static int __init rate_monotonic_scheduler_initialize(void)
 {
     int status;
     printk(KERN_INFO "Initializing CPU time measurer\n");
@@ -20,7 +20,7 @@ static int __init cputime_measurer_initialize(void)
     {
         return (status);
     }
-    /* Start the work queue and the timer */
+    /* Start the kthread and create task cache */
     status = kthread_init();
     if (status)
     {
@@ -30,18 +30,17 @@ static int __init cputime_measurer_initialize(void)
 }
 
 /* Exit the module */
-static void __exit cputime_measurer_finalize(void)
+static void __exit rate_monotonic_scheduler_finalize(void)
 {
     printk(KERN_INFO "Finalizing the module\n");
     /* remove all proc entries */
     proc_finalize();
-    /* flush the work queue, stop the timer 
-       and clean up the list */
+    /* Stop kthread, remove tasks and destroy cache */
     stop_kthread();
 }
 
-module_init(cputime_measurer_initialize);
-module_exit(cputime_measurer_finalize);
+module_init(rate_monotonic_scheduler_initialize);
+module_exit(rate_monotonic_scheduler_finalize);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR(DRIVER_AUTHOR);
