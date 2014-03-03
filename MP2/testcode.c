@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
     if(pid != mypid)
     {
-        printf("Could not schedule our task\n");
+        printf("Could not schedule our task with pid %d\n",mypid);
         return -1;
     }
 
