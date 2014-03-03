@@ -50,12 +50,6 @@ void clean_up_list(void)
     mutex_unlock(&process_list_lock);
 }
 
-void timer_init(struct timer_list  *timer, void (*function)(unsigned long))
-{
-    init_timer(timer);
-    timer->function = function;
-}
-
 /* Return tasks registered with the kernel module */
 unsigned int get_tasks_from_list(char **tasks)
 {
@@ -108,11 +102,11 @@ struct my_task *get_next_task(void)
 }
 
 /* Timer callback for a task. Put task to ready state */
-void timer_cb(unsigned long pid)
+void timer_cb(my_task_t *task)
 {
     /* Spin lock to protect task state */
-    my_task_t *task;
-    task = find_my_task_by_pid(pid);
+//    my_task_t *task;
+ //   task = find_my_task_by_pid(pid);
     spin_lock_irqsave(&mytask_lock, flags);
     task->state = READY;
     spin_unlock_irqrestore(&mytask_lock, flags);
@@ -228,15 +222,13 @@ void register_task(unsigned int pid, unsigned int period, unsigned int computati
 
     init_timer(&new_task->wakeup_timer);
     new_task->wakeup_timer.function = timer_cb;
-//    timer_init(&new_task->wakeup_timer,timer_cb);
     new_task->wakeup_timer.data = (unsigned long) pid;
-  //  mod_timer(&new_task->wakeup_timer,jiffies +  msecs_to_jiffies(new_task->period));
+    new_task->wakeup_timer.data = (my_task_t *) new_task;
     /* Add task to the task list */
     mutex_lock(&process_list_lock);
     list_add_tail(&new_task->task_node, &process_list);
     mutex_unlock(&process_list_lock);
     /* Set up the timer for the task */
-    //setup_timer(&new_task->wakeup_timer,timer_cb,new_task);
     printk(KERN_INFO "Registered new task with pid %u\n", pid);
 }
 

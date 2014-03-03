@@ -19,7 +19,7 @@ typedef struct my_task {
     unsigned int period;
     unsigned int computation;
     struct list_head task_node;
-    unsigned int next_period;
+    unsigned long int next_period;
 } my_task_t;
 
 /**

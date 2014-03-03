@@ -71,15 +71,15 @@ int main(int argc, char **argv)
         struct timeval start_time, end_time;
         long int result;
         int i;
-        long int n = 7000;
-        gettimeofday(&start_time);
+        long int n = 6000;
+        gettimeofday(&start_time,NULL);
          
         printf("\nWakeup time is  %lf msecs",time_diff(&t0,&start_time));
 
         for(i=0;i<n;i++) {
             result = factorial(i);
         }
-        gettimeofday(&end_time);
+        gettimeofday(&end_time,NULL);
         printf("\nComputation time is  %lf msecs",time_diff(&t0,&end_time));
 
         sprintf(cmd, "echo 'Y, %d'>" PROC_FILENAME, mypid);
