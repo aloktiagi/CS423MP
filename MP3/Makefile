@@ -1,9 +1,9 @@
-obj-m = cpum.o
+obj-m = prof.o
 
-cpum-objs := \
+prof-objs := \
 	main.o \
 	proc.o \
-        usertime.o
+    profiler.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules

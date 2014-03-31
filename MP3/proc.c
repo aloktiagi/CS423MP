@@ -39,13 +39,13 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
         case 'R':
             sscanf(input+2, "%u", &pid);
             /* register a new task with pid, period and its computation */
-            register_task(pid);
+            register_process(pid);
             printk(KERN_INFO "Registering pid %u\n", pid);
             break;
         case 'U':
             sscanf(input+2, "%u", &pid);
             /* Deregister a task */
-            deregister_task(pid);
+            deregister_process(pid);
             break;
         default:
             printk(KERN_INFO "Error regstering process");
