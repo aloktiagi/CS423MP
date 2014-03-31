@@ -19,7 +19,6 @@
 
 /* Work Queue structure */
 static struct workqueue_struct* wq = NULL;
-static struct delayed_work* d_wq = NULL;
 
 static unsigned long* profiler_buff;
 static int curr_buff;
@@ -40,11 +39,23 @@ static DEFINE_MUTEX(process_list_lock);
 
 static void work_queue_callback(void *task);
 
+static DECLARE_DELAYED_WORK(d_wq, &work_queue_callback);
+
 void delete_work_queue(void)
 {
-    flush_workqueue(wq);
-    destroy_workqueue(wq);
+    if(wq) {
+        cancel_delayed_work(&d_wq);
+        flush_workqueue(wq);
+        destroy_workqueue(wq);
+    }
     wq = NULL;
+}
+
+void create_work_queue(void)
+{
+    if(!wq)
+        wq = create_workqueue("my_work");
+    queue_delayed_work(wq, &d_wq, msecs_to_jiffies(50));
 }
 
 /* Adds a newly registered process at 
@@ -102,22 +113,18 @@ void update_profiler_buffer(void)
     profiler_buff[curr_buff++] = majorflts;
     profiler_buff[curr_buff++] = minorflts;
     profiler_buff[curr_buff++] = util;
-    printk("\n Updating pid %d maj %lu min %lu util %lu",curr->pid, curr->major_fault, curr->minor_fault, curr->utilization);
+    printk("\n maj %lu min %lu util %lu",majorflts, minorflts, util);
     if(curr_buff+4 >= BUFF_SIZE/sizeof(unsigned long)) {
         curr_buff = 0;
     }
 }
 
-void schedule_job(void)
-{
-    INIT_DELAYED_WORK(d_wq, work_queue_callback);
-    queue_delayed_work(wq, d_wq, msecs_to_jiffies(50));
-}
-
 void work_queue_callback(void *task)
 {
     update_profiler_buffer();
-    schedule_job();
+    if(wq)
+        queue_delayed_work(wq, &d_wq, msecs_to_jiffies(50));
+    printk(KERN_INFO "\n Work queue call back");
 }
 
 int deregister_process(pid_t pid)
@@ -129,12 +136,13 @@ int deregister_process(pid_t pid)
         if(curr->pid == pid) {
             list_del(&curr->list);
             kfree(curr);
-            if(list_empty(&process_list) == 0) {
-                delete_work_queue();
-            }
         }
     }
     mutex_unlock(&process_list_lock);
+    if(list_empty(&process_list)) {
+        printk(KERN_INFO "\n Last process removing work queue");
+        delete_work_queue();
+    }
     return 0;
 }
 int register_process(pid_t pid)
@@ -152,7 +160,7 @@ int register_process(pid_t pid)
 
     if(list_empty(&process_list) == 0) {
         printk("\n First process, schedule the job");
-        schedule_job();
+        create_work_queue();
     }
 
     return 0;
@@ -168,12 +176,6 @@ int init_profiler(void)
 
     curr_buff = 0;
     
-    d_wq = kmalloc(sizeof(struct delayed_work), GFP_ATOMIC);
-    
-    wq = create_workqueue("my_queue");
-    if(!wq)
-        return -ENOMEM;
-    printk("\nWork Queue created");
     return ret;
 }
 
