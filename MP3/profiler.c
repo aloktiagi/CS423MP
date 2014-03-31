@@ -8,7 +8,7 @@
 #include <linux/compiler.h>
 #include <linux/list.h>
 #include <linux/vmalloc.h>
-#include<linux/slab.h>
+#include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 
@@ -38,7 +38,7 @@ typedef struct task_struct_t
 LIST_HEAD(process_list);
 static DEFINE_MUTEX(process_list_lock);
 
-static void work_callback(void *task);
+static void work_queue_callback(void *task);
 
 void delete_work_queue(void)
 {
@@ -84,9 +84,9 @@ int update_data(task_struct *task)
 void update_profiler_buffer(void)
 {
     task_struct *curr, *next;
-    unsigned long majorflts;
-    unsigned long minorflts;
-    unsigned long util;
+    unsigned long majorflts = 0;
+    unsigned long minorflts = 0;
+    unsigned long util = 0;
 
     mutex_lock(&process_list_lock);
     list_for_each_entry_safe(curr, next, &process_list, list)
@@ -97,11 +97,12 @@ void update_profiler_buffer(void)
             util += curr->utilization;            
         }
     }
+    mutex_unlock(&process_list_lock);
     profiler_buff[curr_buff++] = jiffies;   
     profiler_buff[curr_buff++] = majorflts;
     profiler_buff[curr_buff++] = minorflts;
     profiler_buff[curr_buff++] = util;
-
+    printk("\n Updating pid %d maj %lu min %lu util %lu",curr->pid, curr->major_fault, curr->minor_fault, curr->utilization);
     if(curr_buff+4 >= BUFF_SIZE/sizeof(unsigned long)) {
         curr_buff = 0;
     }
@@ -109,11 +110,11 @@ void update_profiler_buffer(void)
 
 void schedule_job(void)
 {
-    INIT_DELAYED_WORK(wq, work_callback);
+    INIT_DELAYED_WORK(d_wq, work_queue_callback);
     queue_delayed_work(wq, d_wq, msecs_to_jiffies(50));
 }
 
-void work_callback(void *task)
+void work_queue_callback(void *task)
 {
     update_profiler_buffer();
     schedule_job();
@@ -172,7 +173,6 @@ int init_profiler(void)
     wq = create_workqueue("my_queue");
     if(!wq)
         return -ENOMEM;
-  
     printk("\nWork Queue created");
     return ret;
 }
@@ -181,7 +181,7 @@ int init_profiler(void)
    work queue and remove all entries from the list */
 void stop_profiler(void)
 {
-    if(!wq)
+    if(wq)
         delete_work_queue();
     clean_up_list();
     if(profiler_buff)

@@ -11,7 +11,7 @@ all:
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
-all: test
+all: work
 
 test:
-	gcc -o test testcode.c
+	gcc -o work work.c
