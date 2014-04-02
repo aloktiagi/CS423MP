@@ -1,12 +1,16 @@
 #include <linux/module.h>	/* Needed by all modules */
 #include <linux/kernel.h>	/* Needed for KERN_INFO */
 #include <linux/init.h>		/* Needed for the macros */
+#include <linux/cdev.h>
 
 #include "include/proc.h"
 #include "include/profiler.h"
 
 #define DRIVER_AUTHOR "Alok Tiagi Cedar Pan"
 #define DRIVER_DESC   "Profiler"
+
+ 
+
 
 /* Initialize the kernel module */
 static int __init profiler_initialize(void)

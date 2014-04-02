@@ -1,8 +1,8 @@
-cmd_/home/cs423/OS/CS423MP/MP3/profiler.o := gcc -Wp,-MD,/home/cs423/OS/CS423MP/MP3/.profiler.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/4.7/include  -I/usr/src/linux-headers-3.5.0-21-generic/arch/x86/include -Iarch/x86/include/generated -Iinclude  -include /usr/src/linux-headers-3.5.0-21-generic/include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -fstack-protector -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_AVX=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -Wframe-larger-than=1024 -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO  -DMODULE  -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(profiler)"  -D"KBUILD_MODNAME=KBUILD_STR(cpum)" -c -o /home/cs423/OS/CS423MP/MP3/.tmp_profiler.o /home/cs423/OS/CS423MP/MP3/profiler.c
+cmd_/home/cs423/CS423MP/MP3/profiler.o := gcc -Wp,-MD,/home/cs423/CS423MP/MP3/.profiler.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/4.7/include  -I/usr/src/linux-headers-3.5.0-21-generic/arch/x86/include -Iarch/x86/include/generated -Iinclude  -include /usr/src/linux-headers-3.5.0-21-generic/include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -fstack-protector -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -DCONFIG_AS_FXSAVEQ=1 -DCONFIG_AS_AVX=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -mno-avx -Wframe-larger-than=1024 -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO  -DMODULE  -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(profiler)"  -D"KBUILD_MODNAME=KBUILD_STR(prof)" -c -o /home/cs423/CS423MP/MP3/.tmp_profiler.o /home/cs423/CS423MP/MP3/profiler.c
 
-source_/home/cs423/OS/CS423MP/MP3/profiler.o := /home/cs423/OS/CS423MP/MP3/profiler.c
+source_/home/cs423/CS423MP/MP3/profiler.o := /home/cs423/CS423MP/MP3/profiler.c
 
-deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
+deps_/home/cs423/CS423MP/MP3/profiler.o := \
   include/linux/module.h \
     $(wildcard include/config/sysfs.h) \
     $(wildcard include/config/modules.h) \
@@ -508,9 +508,50 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
     $(wildcard include/config/slub/debug.h) \
   include/linux/kmemleak.h \
     $(wildcard include/config/debug/kmemleak.h) \
-  /home/cs423/OS/CS423MP/MP3/include/profiler.h \
-  /home/cs423/OS/CS423MP/MP3/include/mp3_given.h \
+  include/linux/fs.h \
+    $(wildcard include/config/fs/posix/acl.h) \
+    $(wildcard include/config/security.h) \
+    $(wildcard include/config/quota.h) \
+    $(wildcard include/config/fsnotify.h) \
+    $(wildcard include/config/ima.h) \
+    $(wildcard include/config/epoll.h) \
+    $(wildcard include/config/debug/writecount.h) \
+    $(wildcard include/config/file/locking.h) \
+    $(wildcard include/config/auditsyscall.h) \
+    $(wildcard include/config/block.h) \
+    $(wildcard include/config/fs/xip.h) \
+    $(wildcard include/config/migration.h) \
+  include/linux/limits.h \
+  include/linux/blk_types.h \
+    $(wildcard include/config/blk/cgroup.h) \
+    $(wildcard include/config/blk/dev/integrity.h) \
+  include/linux/kdev_t.h \
+  include/linux/dcache.h \
+  include/linux/rculist.h \
+  include/linux/rculist_bl.h \
+  include/linux/list_bl.h \
+  include/linux/bit_spinlock.h \
+  include/linux/path.h \
+  include/linux/radix-tree.h \
+  include/linux/prio_tree.h \
   include/linux/pid.h \
+  include/linux/semaphore.h \
+  include/linux/fiemap.h \
+  include/linux/shrinker.h \
+  include/linux/migrate_mode.h \
+  include/linux/quota.h \
+    $(wildcard include/config/quota/netlink/interface.h) \
+  include/linux/percpu_counter.h \
+  include/linux/dqblk_xfs.h \
+  include/linux/dqblk_v1.h \
+  include/linux/dqblk_v2.h \
+  include/linux/dqblk_qtree.h \
+  include/linux/nfs_fs_i.h \
+  include/linux/fcntl.h \
+  /usr/src/linux-headers-3.5.0-21-generic/arch/x86/include/asm/fcntl.h \
+  include/asm-generic/fcntl.h \
+  /home/cs423/CS423MP/MP3/include/profiler.h \
+  /home/cs423/CS423MP/MP3/include/mp3_given.h \
   include/linux/sched.h \
     $(wildcard include/config/sched/debug.h) \
     $(wildcard include/config/no/hz.h) \
@@ -525,7 +566,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
     $(wildcard include/config/cgroups.h) \
     $(wildcard include/config/inotify/user.h) \
     $(wildcard include/config/fanotify.h) \
-    $(wildcard include/config/epoll.h) \
     $(wildcard include/config/posix/mqueue.h) \
     $(wildcard include/config/keys.h) \
     $(wildcard include/config/perf/events.h) \
@@ -538,9 +578,7 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
     $(wildcard include/config/rcu/boost.h) \
     $(wildcard include/config/compat/brk.h) \
     $(wildcard include/config/sysvipc.h) \
-    $(wildcard include/config/auditsyscall.h) \
     $(wildcard include/config/rt/mutexes.h) \
-    $(wildcard include/config/block.h) \
     $(wildcard include/config/task/xacct.h) \
     $(wildcard include/config/cpusets.h) \
     $(wildcard include/config/futex.h) \
@@ -562,7 +600,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
     $(wildcard include/config/aio.h) \
     $(wildcard include/config/mmu/notifier.h) \
   include/linux/auxvec.h \
-  include/linux/prio_tree.h \
   include/linux/page-debug-flags.h \
     $(wildcard include/config/page/poisoning.h) \
     $(wildcard include/config/page/guard.h) \
@@ -583,7 +620,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
   /usr/src/linux-headers-3.5.0-21-generic/arch/x86/include/asm/siginfo.h \
   include/asm-generic/siginfo.h \
   include/linux/proportions.h \
-  include/linux/percpu_counter.h \
   include/linux/seccomp.h \
     $(wildcard include/config/seccomp.h) \
     $(wildcard include/config/seccomp/filter.h) \
@@ -596,7 +632,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
   arch/x86/include/generated/asm/unistd_64_x32.h \
   /usr/src/linux-headers-3.5.0-21-generic/arch/x86/include/asm/ia32_unistd.h \
   arch/x86/include/generated/asm/unistd_32_ia32.h \
-  include/linux/rculist.h \
   include/linux/rtmutex.h \
     $(wildcard include/config/debug/rt/mutexes.h) \
   include/linux/plist.h \
@@ -613,7 +648,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
   include/linux/latencytop.h \
   include/linux/cred.h \
     $(wildcard include/config/debug/credentials.h) \
-    $(wildcard include/config/security.h) \
   include/linux/key.h \
   include/linux/selinux.h \
     $(wildcard include/config/security/selinux.h) \
@@ -623,6 +657,6 @@ deps_/home/cs423/OS/CS423MP/MP3/profiler.o := \
   include/linux/aio_abi.h \
   include/linux/uio.h \
 
-/home/cs423/OS/CS423MP/MP3/profiler.o: $(deps_/home/cs423/OS/CS423MP/MP3/profiler.o)
+/home/cs423/CS423MP/MP3/profiler.o: $(deps_/home/cs423/CS423MP/MP3/profiler.o)
 
-$(deps_/home/cs423/OS/CS423MP/MP3/profiler.o):
+$(deps_/home/cs423/CS423MP/MP3/profiler.o):

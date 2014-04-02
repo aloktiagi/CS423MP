@@ -11,6 +11,8 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
+#include <linux/fs.h>
+
 
 #include "include/profiler.h"
 #include "include/mp3_given.h"
@@ -165,6 +167,24 @@ int register_process(pid_t pid)
 
     return 0;
 }
+
+int dev_open(struct inode* inode_ptr,struct file* file_ptr)
+{
+    return 0;
+}
+
+int dev_release(struct inode* inode_ptr,struct file* file_ptr)
+{
+    return 0;
+}
+
+int dev_mmp(struct file* file_ptr, struct vm_area_struct* vm_area)
+{
+    return 0;
+}
+
+
+
 /* Initialize the work queue and start the timer */
 int init_profiler(void)
 {
@@ -175,6 +195,13 @@ int init_profiler(void)
         return -ENOMEM;
 
     curr_buff = 0;
+
+    struct file_operations fops ={
+	.open=dev_open,
+	.release=dev_release,
+ 	.mmap=dev_mmap
+    };
+
     
     return ret;
 }
