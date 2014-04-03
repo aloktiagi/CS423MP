@@ -12,6 +12,8 @@
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 #include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/mm.h>
 
 
 #include "include/profiler.h"
@@ -24,6 +26,8 @@ static struct workqueue_struct* wq = NULL;
 
 static unsigned long* profiler_buff;
 static int curr_buff;
+static dev_t dev_no;
+static struct cdev cdevice_driver;
 
 /* Process info linked list */
 typedef struct task_struct_t
@@ -178,8 +182,24 @@ int dev_release(struct inode* inode_ptr,struct file* file_ptr)
     return 0;
 }
 
-int dev_mmp(struct file* file_ptr, struct vm_area_struct* vm_area)
+int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
 {
+    unsigned long physical_page;
+    unsigned long size=vm_area->vm_end - vm_area->vm_start;
+    
+    int ret=-1;
+    printk(KERN_INFO "character device driver map.\n");
+    
+    physical_page = vmalloc_to_pfn(profiler_buff);
+    
+    ret=remap_pfn_range(vm_area, vm_area->vm_start, physical_page, size, vm_area->vm_page_prot);
+
+    if(ret)
+    {
+       printk(KERN_INFO "error occurs at remap_pfn_range.\n");
+       return -EAGAIN;
+    }
+ 
     return 0;
 }
 
@@ -202,8 +222,30 @@ int init_profiler(void)
  	.mmap=dev_mmap
     };
 
+    int status=-1;
+    int major=-1;
+    status=alloc_chrdev_region(&dev_no, 0, 1, "mp3_char_device_driver");
     
-    return ret;
+    if(status<0)
+    {
+       printk(KERN_INFO "Major number allocation failed.\n");
+       return status;
+    }
+
+   major=MAJOR(dev_no);
+   dev_no=MKDEV(major,0);
+   
+   cdev_init(&cdevice_driver,&fops);
+   status=cdev_add(&cdevice_driver, dev_no, 1);
+   
+   if(status<0){
+     printk(KERN_INFO "Char device driver register failed. \n");
+   }
+   else{
+     printk(KERN_INFO "Char device driver registered. \n");
+   }
+   
+   return ret;
 }
 
 /* Clean up module. Delete the timer, clean up the 
@@ -215,6 +257,10 @@ void stop_profiler(void)
     clean_up_list();
     if(profiler_buff)
         vfree(profiler_buff);
+    
+    /*clean up device driver*/
+    cdev_del(&cdevice_driver);
+    unregister_chrdev_region(dev_no,1);
 } 
 
 
