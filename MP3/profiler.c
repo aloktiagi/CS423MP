@@ -19,7 +19,7 @@
 #include "include/profiler.h"
 #include "include/mp3_given.h"
 
-#define BUFF_SIZE 128*4*1000
+#define BUFF_SIZE 128*PAGE_SIZE
 
 /* Work Queue structure */
 static struct workqueue_struct* wq = NULL;
@@ -46,6 +46,14 @@ static DEFINE_MUTEX(process_list_lock);
 static void work_queue_callback(void *task);
 
 static DECLARE_DELAYED_WORK(d_wq, &work_queue_callback);
+
+struct file_operations fops ={
+	.open=NULL,
+	.release=NULL,
+ 	.mmap=dev_mmap,
+    .owner = THIS_MODULE
+};
+
 
 void delete_work_queue(void)
 {
@@ -171,7 +179,7 @@ int register_process(pid_t pid)
 
     return 0;
 }
-
+/*
 int dev_open(struct inode* inode_ptr,struct file* file_ptr)
 {
     return 0;
@@ -181,25 +189,31 @@ int dev_release(struct inode* inode_ptr,struct file* file_ptr)
 {
     return 0;
 }
-
+*/
 int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
 {
     unsigned long physical_page;
     unsigned long size=vm_area->vm_end - vm_area->vm_start;
     
     int ret=-1;
+    int i = 0;
     printk(KERN_INFO "character device driver map.\n");
+     
+    for(i = 0; i < size; i += PAGE_SIZE) {
+        //physical_page = vmalloc_to_pfn(profiler_buff);
     
-    physical_page = vmalloc_to_pfn(profiler_buff);
-    
-    ret=remap_pfn_range(vm_area, vm_area->vm_start, physical_page, size, vm_area->vm_page_prot);
-
-    if(ret)
-    {
-       printk(KERN_INFO "error occurs at remap_pfn_range.\n");
-       return -EAGAIN;
+        ret=remap_pfn_range(vm_area,
+                            vm_area->vm_start + i,
+                            vmalloc_to_pfn((void*)(((unsigned long) profiler_buff) + i )), 
+                            PAGE_SIZE, 
+                            vm_area->vm_page_prot);
+  
+        if(ret < 0)
+        {
+            printk(KERN_INFO "error occurs at remap_pfn_range.\n");
+            return -EAGAIN;
+        }
     }
- 
     return 0;
 }
 
@@ -216,12 +230,6 @@ int init_profiler(void)
 
     curr_buff = 0;
 
-    struct file_operations fops ={
-	.open=dev_open,
-	.release=dev_release,
- 	.mmap=dev_mmap
-    };
-
     int status=-1;
     int major=-1;
     status=alloc_chrdev_region(&dev_no, 0, 1, "mp3_char_device_driver");
@@ -232,10 +240,12 @@ int init_profiler(void)
        return status;
     }
 
-   major=MAJOR(dev_no);
-   dev_no=MKDEV(major,0);
+   //major=MAJOR(dev_no);
+   //dev_no=MKDEV(major,0);
    
    cdev_init(&cdevice_driver,&fops);
+   cdevice_driver.owner = THIS_MODULE;
+   cdevice_driver.ops = &fops;
    status=cdev_add(&cdevice_driver, dev_no, 1);
    
    if(status<0){
