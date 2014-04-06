@@ -19,17 +19,25 @@
 #include "include/profiler.h"
 #include "include/mp3_given.h"
 
+/* Memory buffer */
 #define BUFF_SIZE 128*PAGE_SIZE
 
 /* Work Queue structure */
 static struct workqueue_struct* wq = NULL;
 
+/* Pointer to memory buffer */
 static unsigned long* profiler_buff;
+/* Current location in the buffer */
 static int curr_buff;
+/* Char dev structures */
 static dev_t dev_no;
 static struct cdev cdevice_driver;
 
-/* Process info linked list */
+/* Process info linked list
+    Cpu utilization
+    minor faults
+    major faults
+     */
 typedef struct task_struct_t
 {
     struct task_struct* linux_task;
@@ -42,11 +50,13 @@ typedef struct task_struct_t
 
 LIST_HEAD(process_list);
 static DEFINE_MUTEX(process_list_lock);
-
+/* Work queue call back to be called when
+work is scheduled */
 static void work_queue_callback(void *task);
 
 static DECLARE_DELAYED_WORK(d_wq, &work_queue_callback);
 
+/* File operation structure */
 struct file_operations fops ={
 	.open=NULL,
 	.release=NULL,
@@ -54,7 +64,7 @@ struct file_operations fops ={
     .owner = THIS_MODULE
 };
 
-
+/* Delete work queue */
 void delete_work_queue(void)
 {
     if(wq) {
@@ -65,6 +75,7 @@ void delete_work_queue(void)
     wq = NULL;
 }
 
+/* Create a workqueue */
 void create_work_queue(void)
 {
     if(!wq)
@@ -72,6 +83,7 @@ void create_work_queue(void)
     queue_delayed_work(wq, &d_wq, msecs_to_jiffies(50));
 }
 
+/* Get all registered tasks */
 int get_tasks_from_list(char **proc_buffer)
 {
     int index = 0;
@@ -110,6 +122,8 @@ void clean_up_list(void)
     }
 }
 
+/* Update processes with info, cpu utilization
+minor faults and major faults */
 int update_data(task_struct *task)
 {
     unsigned long majorflts, minorflts, utime, stime;
@@ -122,6 +136,8 @@ int update_data(task_struct *task)
     return ret;
 }
 
+/* Update the memory buffer with the values of
+cpu utilization, minor and major faults */
 void update_profiler_buffer(void)
 {
     task_struct *curr, *next;
@@ -157,6 +173,7 @@ void work_queue_callback(void *task)
     printk(KERN_INFO "\n Work queue call back");
 }
 
+/* Deregister a process */
 int deregister_process(pid_t pid)
 {
     task_struct *curr, *next;
@@ -168,6 +185,7 @@ int deregister_process(pid_t pid)
             kfree(curr);
         }
     }
+    /* Delete work queue if it was the last process */
     mutex_unlock(&process_list_lock);
     if(list_empty(&process_list)) {
         printk(KERN_INFO "\n Last process removing work queue");
@@ -175,6 +193,8 @@ int deregister_process(pid_t pid)
     }
     return 0;
 }
+
+/* register a new process */
 int register_process(pid_t pid)
 {
     task_struct *newtask;
@@ -188,6 +208,9 @@ int register_process(pid_t pid)
     
     add_process_to_list(newtask);
 
+    /* Start work queue if this is the first
+    process
+    */
     if(list_empty(&process_list) == 0) {
         printk("\n First process, schedule the job");
         create_work_queue();
@@ -206,6 +229,8 @@ int dev_release(struct inode* inode_ptr,struct file* file_ptr)
     return 0;
 }
 */
+
+/* Char device mmap function */
 int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
 {
     unsigned long size=vm_area->vm_end - vm_area->vm_start;
@@ -213,7 +238,8 @@ int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
     int ret=-1;
     int i = 0;
     printk(KERN_INFO "character device driver map.\n");
-     
+    /* Loop through with increments of page size to map 
+    virtual page to the physical page */
     for(i = 0; i < size; i += PAGE_SIZE) {
         //physical_page = vmalloc_to_pfn(profiler_buff);
     
@@ -234,7 +260,7 @@ int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
 
 
 
-/* Initialize the work queue and start the timer */
+/* Initialize the memory buffer and create the char device */
 int init_profiler(void)
 {
     int ret = 0;
@@ -269,8 +295,10 @@ int init_profiler(void)
    return ret;
 }
 
-/* Clean up module. Delete the timer, clean up the 
-   work queue and remove all entries from the list */
+/* Clean up module.Delete the work queue, remove 
+all processes from the list, free the buffer and unregister
+the char device
+ */
 void stop_profiler(void)
 {
     if(wq)

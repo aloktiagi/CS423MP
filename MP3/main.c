@@ -9,14 +9,11 @@
 #define DRIVER_AUTHOR "Alok Tiagi Cedar Pan"
 #define DRIVER_DESC   "Profiler"
 
- 
-
-
 /* Initialize the kernel module */
 static int __init profiler_initialize(void)
 {
     int status;
-    printk(KERN_INFO "Initializing CPU time measurer\n");
+    printk(KERN_INFO "Initializing the profiler\n");
 
     /* Initialize the proc file system */
     status = proc_initialize();
@@ -24,7 +21,7 @@ static int __init profiler_initialize(void)
     {
         return (status);
     }
-    /* Start the work queue and the timer */
+    /* Initialize the profiler*/
     status = init_profiler();
     if (status)
     {
@@ -39,8 +36,9 @@ static void __exit profiler_finalize(void)
     printk(KERN_INFO "Finalizing the module\n");
     /* remove all proc entries */
     proc_finalize();
-    /* flush the work queue, stop the timer 
-       and clean up the list */
+    /* flush the work queue, cleanup the list
+    and unregister the char device 
+    */
     stop_profiler();
 }
 

@@ -14,7 +14,7 @@
 static struct proc_dir_entry *dir = NULL;
 static struct proc_dir_entry *proc_entry = NULL;
 /* Buffer to copy data */
-static char procfs_buffer[PROCFS_MAX_SIZE];
+//static char procfs_buffer[PROCFS_MAX_SIZE];
 /* intialize the size to 0 */
 static unsigned long procfs_buffer_size = 0; 
 
@@ -38,7 +38,7 @@ int write_proc_cb(struct file* file, const char __user*  buffer, unsigned long c
     {
         case 'R':
             sscanf(input+2, "%u", &pid);
-            /* register a new task with pid, period and its computation */
+            /* register a new task with pid */
             register_process(pid);
             printk(KERN_INFO "Registering pid %u\n", pid);
             break;

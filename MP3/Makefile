@@ -11,7 +11,8 @@ all:
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
-all: work
+all: work monitor
 
 test:
 	gcc -o work work.c
+	gcc -o monitor monitor.c
