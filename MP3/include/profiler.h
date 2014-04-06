@@ -18,7 +18,7 @@ extern int deregister_process(pid_t pid);
 /**
  * Return all process ids and their cputimes.
  */
-unsigned int get_process_times_from_list(char **process_times);
+extern int get_tasks_from_list(char **process_times);
 
 extern int dev_open(struct inode* inode_ptr, struct file* file_ptr);
 extern int dev_release(struct inode* inode_ptr, struct file* file_ptr);

@@ -72,6 +72,22 @@ void create_work_queue(void)
     queue_delayed_work(wq, &d_wq, msecs_to_jiffies(50));
 }
 
+int get_tasks_from_list(char **proc_buffer)
+{
+    int index = 0;
+    task_struct *task;
+    *proc_buffer = (char*) kmalloc(2048, GFP_KERNEL);
+    *proc_buffer[0] = '\0';
+
+    mutex_lock(&process_list_lock);
+    list_for_each_entry(task, &process_list, list)
+    {
+        index += sprintf(*proc_buffer+index, "%d\n", task->pid);
+    }
+    mutex_unlock(&process_list_lock);
+    return index;
+}
+
 /* Adds a newly registered process at 
    the end of the list */
 void add_process_to_list(task_struct *task)
@@ -192,7 +208,6 @@ int dev_release(struct inode* inode_ptr,struct file* file_ptr)
 */
 int dev_mmap(struct file* file_ptr, struct vm_area_struct* vm_area)
 {
-    unsigned long physical_page;
     unsigned long size=vm_area->vm_end - vm_area->vm_start;
     
     int ret=-1;
@@ -227,11 +242,10 @@ int init_profiler(void)
     profiler_buff = (unsigned long*) vmalloc(BUFF_SIZE);
     if(!profiler_buff)
         return -ENOMEM;
-
+    memset ((void*)profiler_buff, 0, BUFF_SIZE);
     curr_buff = 0;
 
     int status=-1;
-    int major=-1;
     status=alloc_chrdev_region(&dev_no, 0, 1, "mp3_char_device_driver");
     
     if(status<0)
@@ -240,9 +254,6 @@ int init_profiler(void)
        return status;
     }
 
-   //major=MAJOR(dev_no);
-   //dev_no=MKDEV(major,0);
-   
    cdev_init(&cdevice_driver,&fops);
    cdevice_driver.owner = THIS_MODULE;
    cdevice_driver.ops = &fops;
